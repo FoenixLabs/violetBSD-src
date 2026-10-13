@@ -1,0 +1,5 @@
+# SRAM-resident kernel loaded at 0x100000 using fm.sh --run-m68k-bin.
+include "arch/a2560me/conf/GENERIC"
+# Preserve RAM's historical COM1 console; RAM_LOCAL explicitly selects wscons.
+no options A2560ME_WSCONS
+makeoptions A2560ME_RAM=1

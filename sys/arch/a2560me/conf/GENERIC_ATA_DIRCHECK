@@ -1,0 +1,4 @@
+# Read-only inode 17 directory data, specific to the 2026-10-08 ld3 image.
+# Verify the image layout before using on a different disk.
+include "arch/a2560me/conf/GENERIC_ATA_READCHECK"
+options A2560ME_ATA_CHECK_LBA=1135356

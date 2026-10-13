@@ -1,0 +1,7 @@
+# Dedicated diskless palette demo; stops before root selection/mount.
+include "arch/a2560me/conf/FLASH_USB"
+options A2560ME_GUI_DEMO
+no ld0
+no ld1
+no ld2
+no ld3

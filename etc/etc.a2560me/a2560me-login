@@ -1,0 +1,15 @@
+#!/bin/sh
+# init starts gettys only after /etc/rc finishes. Keep screen 0 visible until
+# then, and select screen 1 once per boot, never again on subsequent logouts.
+if [ "${2-}" = ttyE1 ]; then
+    boot=$(/sbin/sysctl -n kern.boottime 2>/dev/null)
+    marker=/var/run/a2560me-login.boot
+    previous=
+    [ ! -r "$marker" ] || previous=$(cat "$marker")
+    if [ -n "$boot" ] && [ "$boot" != "$previous" ]; then
+        if /usr/sbin/wsconscfg -s 2; then
+            (umask 077; printf '%s\n' "$boot" > "$marker")
+        fi
+    fi
+fi
+exec /usr/libexec/getty "$@"

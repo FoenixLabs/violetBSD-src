@@ -1,0 +1,2 @@
+include "arch/a2560me/conf/FLASH_USB"
+options A2560ME_ATA_WRITECHECK

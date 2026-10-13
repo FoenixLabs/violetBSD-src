@@ -1,0 +1,64 @@
+# 8 MiB SRAM + 1016 MiB DDR3 / 4 MiB XIP flash kernel; FPGA Build 23 required.
+include "arch/a2560me/conf/std.a2560me"
+makeoptions COPTS="-Os"
+maxusers 2
+options HZ=100
+options A2560ME_DDR_FULL
+# Native LAN on recognized Build 35+ at 50 MHz; older firmware stays 16-bit.
+options A2560ME_LAN32
+options NBUF=32
+options BUFPAGES=64
+options NMBCLUSTERS=128
+options FFS_NO_SNAPSHOT
+options SYSVSHM		# X11 MIT-SHM and shared-memory font support
+options INET
+# Limit TCP receive bursts: validated LAN9221 FIFO-overflow workaround.
+options TCP_RECVSPACE=8192
+options TCP_RECVBUF_AUTO=0
+options NFS_BOOT_DHCP
+file-system FFS
+file-system NFS
+file-system MSDOSFS
+file-system PTYFS
+pseudo-device pty
+pseudo-device loop
+pseudo-device bpfilter
+# Connect the PS/2 keyboard to the local display.
+pseudo-device wsmux
+config netbsd root on ? type ?
+mainbus0 at root
+fnrtc0 at mainbus?
+com0 at mainbus?
+fnuart0 at mainbus?
+fnuart1 at mainbus?
+ld0 at mainbus?
+ld1 at mainbus?
+ld2 at mainbus?
+ld3 at mainbus?
+smsh0 at mainbus?
+ukphy* at mii? phy ?
+# Native screen/PS2 console: boot scripts and login stay on the monitor.
+options A2560ME_WSCONS
+options WSEMUL_VT100
+# Vicky text has no underline plane: use cyan, retaining the text background.
+options WSEMUL_VT100_UNDERLINE_FG=6
+options WSEMUL_VT100_UNDERLINE_BG=-1
+# Support switching between the native boot console (F1) and extra screens.
+options WSDISPLAY_COMPAT_USL
+# Do not automatically allocate extra display screens.
+# A native wscons console attaches its own console screen independently.
+options WSDISPLAY_DEFAULTSCREENS=0
+vicky0 at mainbus?
+wsdisplay0 at vicky? console ?
+pckbc0 at mainbus?
+pckbd* at pckbc? slot ?
+wskbd* at pckbd? console ?
+
+# PS/2 auxiliary port; polled by the shared board controller.
+pms* at pckbc? slot ?
+wsmouse* at pms? mux 0
+
+# Build 67 GGE DAC player (audio only; legacy video remains active).
+ggedac0 at mainbus?
+audio* at audiobus?
+pseudo-device drvctl

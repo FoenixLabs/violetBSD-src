@@ -1,0 +1,9 @@
+# Reserve the kernel console (ttyE0/F1) for messages; logins use F2-F4.
+console "/usr/libexec/getty std.115200" vt100 off secure
+constty "/usr/libexec/getty std.115200" vt100 off secure
+tty00   "/usr/libexec/getty std.115200" vt100 off secure
+ttyE0   "/usr/libexec/getty Pc"        vt100 off secure
+# init starts this wrapper only after /etc/rc completes.
+ttyE1   "/etc/a2560me-login Pc"        vt100 on secure
+ttyE2   "/usr/libexec/getty Pc"        vt100 on secure
+ttyE3   "/usr/libexec/getty Pc"        vt100 on secure

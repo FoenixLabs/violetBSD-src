@@ -1,0 +1,3 @@
+# NetBSD/a2560me console lifecycle configuration.
+./etc/a2560me-login		etc-sys-rc
+./etc/rc.shutdown.final		etc-sys-rc

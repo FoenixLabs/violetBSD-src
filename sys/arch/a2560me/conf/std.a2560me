@@ -1,0 +1,6 @@
+machine a2560me m68k
+include "conf/std"
+include "arch/m68k/conf/std.m68k"
+options __HAVE_NEW_PMAP_68K
+options M68060
+options FPU_EMULATE

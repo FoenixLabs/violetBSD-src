@@ -1,0 +1,72 @@
+maxpartitions 16
+maxusers 2 2 16
+device mainbus { }
+attach mainbus at root
+file arch/a2560me/dev/mainbus.c mainbus
+file arch/a2560me/a2560me/machdep.c
+file arch/a2560me/a2560me/autoconf.c
+file arch/a2560me/a2560me/clock.c
+file arch/a2560me/a2560me/intr.c
+file arch/a2560me/dev/console.c
+file arch/m68k/m68k/bus_space_simple.c
+file arch/m68k/m68k/bus_dma.c
+file arch/m68k/m68k/dumpsys.c
+file arch/m68k/m68k/m68k_intr_stubs.s
+file dev/cons.c
+file kern/subr_disk_mbr.c
+include "arch/a2560me/conf/majors.a2560me"
+attach com at mainbus with com_mainbus
+file arch/a2560me/dev/com_mainbus.c com_mainbus
+attach ld at mainbus with ld_board
+file arch/a2560me/dev/ld_board.c ld_board
+attach smsh at mainbus with smsh_mainbus
+file arch/a2560me/dev/if_smsh.c
+defflag opt_a2560me.h A2560ME_NO_VCONS
+defflag opt_a2560me.h A2560ME_WSCONS
+defflag opt_a2560me.h A2560ME_GUI_DEMO
+defflag opt_a2560me.h A2560ME_DDR64
+defflag opt_a2560me.h A2560ME_DDR_FULL
+defflag opt_a2560me.h A2560ME_DDR_NOCACHE
+defflag opt_a2560me.h A2560ME_PV_CHECK
+device vicky: wsemuldisplaydev
+attach vicky at mainbus
+file arch/a2560me/dev/vicky.c vicky
+attach pckbc at mainbus with pckbc_mainbus
+file arch/a2560me/dev/pckbc_mainbus.c pckbc_mainbus
+include "dev/pckbport/files.pckbport"
+file arch/a2560me/dev/fdc_board.c ld_board
+
+device fnuart: tty
+attach fnuart at mainbus
+file arch/a2560me/dev/fnuart.c
+defflag opt_a2560me.h A2560ME_USB_CONSOLE
+
+
+defflag opt_a2560me.h A2560ME_SINGLE_USER
+
+file arch/a2560me/dev/led.c
+
+# Firmware-gated native LAN accesses; nooptions forces paired 16-bit.
+defflag opt_a2560me.h A2560ME_LAN32
+
+# Read-only ATA disklabel capture; halts before mounting ld3a.
+defflag opt_a2560me.h A2560ME_ATA_READCHECK
+# Optional sector for a focused read-only comparison after the label request.
+defparam opt_a2560me.h A2560ME_ATA_CHECK_LBA
+
+defflag opt_a2560me.h A2560ME_ATA_SLOW_READ
+
+# Explicit scratch-only write test; rejects filesystem writes and halts.
+defflag opt_a2560me.h A2560ME_ATA_WRITECHECK
+
+device fnrtc
+attach fnrtc at mainbus
+file arch/a2560me/dev/fnrtc.c fnrtc
+
+# GGE DDR sample player.
+device ggedac: audiobus
+attach ggedac at mainbus
+file arch/a2560me/dev/ggedac.c ggedac
+
+# Opt-in diskless audio-clock timing experiment; no entropy credit.
+defflag opt_a2560me.h A2560ME_AUDIO_JITTER

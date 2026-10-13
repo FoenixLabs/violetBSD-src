@@ -1,0 +1,7 @@
+# Return to the kernel console before final filesystem sync and halt.
+# VT activation is one-based: 1 selects ttyE0. This is not a halt confirmation.
+if [ -x /usr/sbin/wsconscfg ] && [ -c /dev/ttyE0 ]; then
+    if ! /usr/sbin/wsconscfg -s 1; then
+        echo "WARNING: could not select ttyE0 for final shutdown messages."
+    fi
+fi

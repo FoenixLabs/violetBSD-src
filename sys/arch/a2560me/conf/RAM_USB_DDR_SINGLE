@@ -1,0 +1,5 @@
+# Explicit Build 10 comparison: 64 MiB DDR, normal caches, serial single-user.
+include "arch/a2560me/conf/RAM_USB"
+no options A2560ME_DDR_FULL
+options A2560ME_DDR64
+options A2560ME_SINGLE_USER

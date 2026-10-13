@@ -1,0 +1,3 @@
+# Opt-in diskless timing experiment; restore normal kernel after measurement.
+include "arch/a2560me/conf/FLASH_USB"
+options A2560ME_AUDIO_JITTER

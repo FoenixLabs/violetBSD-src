@@ -1,0 +1,6 @@
+# Explicit Build 10 comparison: SRAM only, normal caches, serial single-user.
+# Keep separate from the default DDR-enabled RAM_USB kernel.
+include "arch/a2560me/conf/RAM_USB"
+no options A2560ME_DDR_FULL
+no options A2560ME_DDR64
+options A2560ME_SINGLE_USER

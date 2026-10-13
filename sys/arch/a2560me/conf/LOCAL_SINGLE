@@ -1,0 +1,3 @@
+# User-authorized flash single-user mSATA test; normal caches and full DDR.
+include "arch/a2560me/conf/LOCAL"
+options A2560ME_SINGLE_USER

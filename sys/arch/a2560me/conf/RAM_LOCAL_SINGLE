@@ -1,0 +1,3 @@
+# SRAM kernel with monitor/PS2 console, booting directly to single-user.
+include "arch/a2560me/conf/RAM_LOCAL"
+options A2560ME_SINGLE_USER

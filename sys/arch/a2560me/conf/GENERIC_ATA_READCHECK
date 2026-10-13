@@ -1,0 +1,7 @@
+# User-authorized read-only mSATA label test; select USER DIP 3.
+include "arch/a2560me/conf/GENERIC"
+# Retain the diagnostic's established serial console/mirroring.
+no options A2560ME_WSCONS
+options A2560ME_ATA_READCHECK
+# Build 35 validation: 1000 rereads with normal, undelayed PIO timing.
+# Add A2560ME_ATA_SLOW_READ only for an explicit timing comparison.

@@ -1,0 +1,4 @@
+# SRAM-only control for the DDR allocator/PV diagnostic failure.
+include "arch/a2560me/conf/RAM_USB_SRAM_SINGLE"
+options DIAGNOSTIC
+options A2560ME_PV_CHECK

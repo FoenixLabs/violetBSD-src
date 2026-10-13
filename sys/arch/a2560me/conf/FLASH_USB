@@ -1,0 +1,5 @@
+# Flash XIP with FPGA UART4 as /dev/console (host ttyUSB3, 115200 8N1).
+# Override GENERIC's native screen/PS2 console.
+include "arch/a2560me/conf/GENERIC"
+no options A2560ME_WSCONS
+options A2560ME_USB_CONSOLE

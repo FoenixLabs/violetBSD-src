@@ -1,0 +1,4 @@
+# Opt-in assertions and PV teardown checks for the DDR CI failure.
+include "arch/a2560me/conf/RAM_USB_DDR_CI_SINGLE"
+options DIAGNOSTIC
+options A2560ME_PV_CHECK

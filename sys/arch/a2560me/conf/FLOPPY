@@ -1,0 +1,3 @@
+# Optional experimental non-DMA 1.44 MiB drive-0 support (ld4).
+include "arch/a2560me/conf/GENERIC"
+ld4 at mainbus?

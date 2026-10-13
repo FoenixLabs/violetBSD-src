@@ -1,0 +1,3 @@
+# Opt-in DDR serialized cache-inhibited comparison; SRAM policy unchanged.
+include "arch/a2560me/conf/RAM_USB_DDR_SINGLE"
+options A2560ME_DDR_NOCACHE
