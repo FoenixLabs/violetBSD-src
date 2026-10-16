@@ -132,6 +132,9 @@ static struct wsscreen_descr screen = {
     .capabilities = WSSCREEN_WSCOLORS | WSSCREEN_REVERSE | WSSCREEN_HILIT};
 static const struct wsscreen_descr *screens[] = {&screen};
 static const struct wsscreen_list list = {1, screens};
+#ifdef A2560ME_HWCURSOR_TEST
+#include "vicky_cursor_test.h"
+#endif
 #include "vicky_bitmap.h"
 static int alloc_screen(void *v, const struct wsscreen_descr *d, void **cookie,
 			int *x, int *y, long *attr)

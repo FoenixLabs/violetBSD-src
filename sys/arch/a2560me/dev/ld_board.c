@@ -22,6 +22,7 @@
 #include <sys/kernel.h>
 #include <dev/ldvar.h>
 #include <machine/board.h>
+#include "sd_crc.h"
 
 int a2560me_fdc_init(void);
 int a2560me_fdc_sector(uint32_t, uint8_t *, bool);
@@ -37,21 +38,34 @@ struct boarddisk {
 #endif
 	int error;
 };
+/* Use register-source byte cycles for the A2560Me peripheral bridge. */
+static void sd_write8(uintptr_t address, unsigned value)
+{
+	__asm volatile("moveb %0,%1@" :: "d"(value), "a"(address) : "memory");
+}
 static int spi(struct boarddisk *sc, int v)
 {
 	if (sc->error)
 		return 0xff;
-	REG8(sc->base + 1) = v;
+	sd_write8(sc->base + 1, v);
+	/* Match the working standalone SD2 path at66.67MHz. */
+	delay(2);
 	for (unsigned n = 0; n < 100000; n++) {
-		if (!(REG8(sc->base) & 0x80))
-			return REG8(sc->base + 1);
+		if (!((REG8(sc->base) | REG8(sc->base) |
+		    REG8(sc->base)) & 0x80)) {
+			/* DATA is latched until the next write; reading does not pop. */
+			uint8_t a = REG8(sc->base + 1);
+			uint8_t b = REG8(sc->base + 1);
+			uint8_t c = REG8(sc->base + 1);
+			return (a & b) | (a & c) | (b & c);
+		}
 	}
 	sc->error = ETIMEDOUT;
 	return 0xff;
 }
 static void deselect(struct boarddisk *sc)
 {
-	REG8(sc->base) &= ~1;
+	sd_write8(sc->base, REG8(sc->base) & ~1U);
 	(void)spi(sc, 0xff);
 }
 static int ready(struct boarddisk *sc)
@@ -66,7 +80,7 @@ static int ready(struct boarddisk *sc)
 static int command(struct boarddisk *sc, unsigned cmd, uint32_t arg)
 {
 	deselect(sc);
-	REG8(sc->base) |= 1;
+	sd_write8(sc->base, REG8(sc->base) | 1);
 	(void)spi(sc, 0xff);
 	if (ready(sc))
 		return 0xff;
@@ -96,14 +110,17 @@ static int receive(struct boarddisk *sc, uint8_t *p, size_t len)
 		return sc->error ? sc->error : EIO;
 	for (size_t i = 0; i < len; i++)
 		p[i] = spi(sc, 0xff);
-	spi(sc, 0xff);
-	spi(sc, 0xff);
-	return sc->error;
+	uint16_t wire = (uint16_t)spi(sc, 0xff) << 8;
+	wire |= spi(sc, 0xff);
+	if (sc->error)
+		return sc->error;
+	return sd_crc16(p, len) == wire ? 0 : EIO;
 }
 static int sd_init(struct boarddisk *sc)
 {
 	uint8_t csd[16], r7[4];
-	REG8(sc->base) = 2;
+	sd_write8(sc->base + 2, sd_slow_divider(a2560me_clock_hz));
+	sd_write8(sc->base, 2);
 	for (unsigned i = 0; i < 10; i++)
 		spi(sc, 0xff);
 	if (command(sc, 0, 0) != 1)
@@ -133,8 +150,17 @@ static int sd_init(struct boarddisk *sc)
 	sc->blockaddr = v2 && (r7[0] & 0x40);
 	if (!sc->blockaddr && command(sc, 16, 512) != 0)
 		return EIO;
-	if (command(sc, 9, 0) != 0 || receive(sc, csd, 16))
-		return EIO;
+	int csd_error = EIO;
+	for (unsigned attempt = 0; attempt < 8; attempt++) {
+		sc->error = 0;
+		csd_error = command(sc, 9, 0) == 0 ? receive(sc, csd, 16) : EIO;
+		deselect(sc);
+		if (!csd_error && !sc->error)
+			break;
+		csd_error = sc->error ? sc->error : csd_error;
+	}
+	if (csd_error)
+		return csd_error;
 	if ((csd[0] >> 6) == 1) {
 		uint32_t size = ((csd[7] & 63) << 16) | (csd[8] << 8) | csd[9];
 		sc->ld.sc_secperunit = ((uint64_t)size + 1) * 1024;
@@ -148,7 +174,7 @@ static int sd_init(struct boarddisk *sc)
 	} else
 		return ENOTSUP;
 	deselect(sc);
-	REG8(sc->base) = 0;
+	sd_write8(sc->base, 0);
 	return sc->error;
 }
 /* Match MCP sdc0_protected(): set means protected. Its header comment
@@ -165,25 +191,36 @@ static int sd_sector(struct boarddisk *sc, uint32_t lba, uint8_t *data, bool wr)
 		return EFBIG;
 	if (wr && sc->base == 0xfec00300 && sd_write_protected(REG32(0xfec00518)))
 		return EROFS;
-	if (command(sc, wr ? 24 : 17, sc->blockaddr ? lba : lba * 512) != 0)
-		e = EIO;
-	else if (!wr)
-		e = receive(sc, data, 512);
-	else {
-		if ((e = ready(sc)) == 0) {
-			spi(sc, 0xfe);
-			for (unsigned i = 0; i < 512; i++)
-				spi(sc, data[i]);
-			spi(sc, 0xff);
-			spi(sc, 0xff);
-			if ((spi(sc, 0xff) & 31) != 5)
-				e = EIO;
-			else
-				e = ready(sc);
+	/* Reads may retry after reselecting the same sector. Never retry writes:
+	 * an error after data acceptance can be an ambiguous completed write. */
+	unsigned attempts = wr ? 1 : 8;
+	do {
+		if (!wr)
+			sc->error = 0;
+		e = 0;
+		if (command(sc, wr ? 24 : 17, sc->blockaddr ? lba : lba * 512) != 0)
+			e = EIO;
+		else if (!wr)
+			e = receive(sc, data, 512);
+		else {
+			if ((e = ready(sc)) == 0) {
+				spi(sc, 0xfe);
+				for (unsigned i = 0; i < 512; i++)
+					spi(sc, data[i]);
+				spi(sc, 0xff);
+				spi(sc, 0xff);
+				if ((spi(sc, 0xff) & 31) != 5)
+					e = EIO;
+				else
+					e = ready(sc);
+			}
 		}
-	}
-	deselect(sc);
-	return sc->error ? sc->error : e;
+		deselect(sc);
+		e = sc->error ? sc->error : e;
+		if (!e || wr)
+			return e;
+	} while (--attempts);
+	return e;
 }
 #ifdef A2560ME_ATA_WRITECHECK
 #define ATA_SCRATCH_LBA 33558529U

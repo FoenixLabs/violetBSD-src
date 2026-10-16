@@ -3,8 +3,8 @@ OUTPUT_ARCH(m68k)
 ENTRY(start)
 SECTIONS
 {
- .reset 0xffc00000 : { KEEP(*(.reset)) }
- .text 0xffc10000 : { *(.text .text.*) }
+ .reset 0xffe00000 : { __kernel_vectors = .; KEEP(*(.reset)) }
+ .text 0xffe10000 : { *(.text .text.*) }
  .rodata ALIGN(4096) : { *(.rodata .rodata.*) }
  /* Keep each set named so GNU ld supplies __start/__stop symbols. */
  link_set_sysctl_funcs ALIGN(4) : { KEEP(*(link_set_sysctl_funcs)) }

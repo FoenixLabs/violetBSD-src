@@ -4,7 +4,7 @@ import struct
 import sys
 import unittest
 from pathlib import Path
-from mkflash import package, FLASH_BASE, FLASH_SIZE
+from mkflash import package, FLASH_BASE, FLASH_SIZE, IMAGE_ALIGNMENT
 
 KERNEL = Path(sys.argv.pop(1)).read_bytes()
 
@@ -12,8 +12,12 @@ KERNEL = Path(sys.argv.pop(1)).read_bytes()
 class FlashTests(unittest.TestCase):
     def test_actual_image(self):
         image, report = package(KERNEL)
-        self.assertEqual(len(image), FLASH_SIZE)
-        self.assertEqual(struct.unpack_from('>II', image), (0x10000, 0xffc10000))
+        used = report['flash_used_bytes']
+        self.assertEqual(len(image), (used + IMAGE_ALIGNMENT - 1) // IMAGE_ALIGNMENT * IMAGE_ALIGNMENT)
+        self.assertLess(len(image)-used, IMAGE_ALIGNMENT)
+        self.assertEqual(image[used:], b'\xff' * (len(image)-used))
+        self.assertEqual(report['program_bytes'], len(image))
+        self.assertEqual(struct.unpack_from('>II', image), (0x10000, 0xffe10000))
         self.assertLess(report['flash_used_bytes'], FLASH_SIZE)
 
     def reject(self, change):

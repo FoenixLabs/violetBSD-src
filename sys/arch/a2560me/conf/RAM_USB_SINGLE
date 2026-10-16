@@ -1,0 +1,3 @@
+# Standard RAM/DDR/cache settings, UART4 console, single-user maintenance.
+include "arch/a2560me/conf/RAM_USB"
+options A2560ME_SINGLE_USER

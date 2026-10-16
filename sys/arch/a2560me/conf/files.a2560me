@@ -23,6 +23,7 @@ attach smsh at mainbus with smsh_mainbus
 file arch/a2560me/dev/if_smsh.c
 defflag opt_a2560me.h A2560ME_NO_VCONS
 defflag opt_a2560me.h A2560ME_WSCONS
+defflag opt_a2560me.h A2560ME_HWCURSOR_TEST
 defflag opt_a2560me.h A2560ME_GUI_DEMO
 defflag opt_a2560me.h A2560ME_DDR64
 defflag opt_a2560me.h A2560ME_DDR_FULL

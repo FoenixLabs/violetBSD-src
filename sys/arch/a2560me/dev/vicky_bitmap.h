@@ -118,6 +118,16 @@ ioctl_display(void *v, void *vs, u_long cmd, void *data, int flag,
 	struct vicky_screen *s = vs;
 	int priority;
 	switch (cmd) {
+#ifdef A2560ME_HWCURSOR_TEST
+	case _IOR('V', 241, uint32_t):
+		if (!(flag & FREAD)) return EBADF;
+		if (s != active || !graphics_active) return EBUSY;
+		return cursor_test_position(l, data);
+	case _IOR('V', 240, uint32_t):
+		if (!(flag & FWRITE)) return EBADF;
+		if (s != active || !graphics_active) return EBUSY;
+		return cursor_test_start(l, data);
+#endif
 	case WSDISPLAYIO_GTYPE:
 		*(u_int *)data = bitmap_ready ? WSDISPLAY_TYPE_GENFB : WSDISPLAY_TYPE_UNKNOWN;
 		return 0;

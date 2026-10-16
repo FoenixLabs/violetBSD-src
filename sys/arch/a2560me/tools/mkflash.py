@@ -5,8 +5,12 @@ import json
 import struct
 from pathlib import Path
 
-FLASH_BASE = 0xFFC00000
-FLASH_SIZE = 0x400000
+PHYSICAL_FLASH_BASE = 0xFFC00000
+FLASH_BASE = 0xFFE00000
+PROGRAMMER_OFFSET = FLASH_BASE - PHYSICAL_FLASH_BASE
+# Physical firmware capacity; file padding does not change section alignment.
+FLASH_SIZE = 0x100000000 - FLASH_BASE
+IMAGE_ALIGNMENT = 0x100000
 SRAM_SIZE = 0x800000
 COPY_SIZE = 0x10000
 
@@ -72,8 +76,12 @@ def package(data):
     if any(not any(a <= pc < b for a, b in executable) for pc in vectors[2:]):
         raise ValueError('early exception vectors must target executable flash')
     used = max(b for a, b in flash_ranges) - FLASH_BASE
-    return bytes(image), dict(flash_base=hex(FLASH_BASE), programmer_offset=0,
-                             image_bytes=FLASH_SIZE, flash_used_bytes=used,
+    padded_size = (used + IMAGE_ALIGNMENT - 1) // IMAGE_ALIGNMENT * IMAGE_ALIGNMENT
+    image = image[:used] + b'\xff' * (padded_size - used)
+    return bytes(image), dict(flash_base=hex(FLASH_BASE), programmer_offset=PROGRAMMER_OFFSET,
+                             image_bytes=padded_size, flash_used_bytes=used,
+                             flash_capacity_bytes=FLASH_SIZE, program_bytes=padded_size,
+                             padding_outside_flash_bytes=max(0, padded_size-FLASH_SIZE),
                              initial_ssp=hex(sp), reset_pc=hex(entry),
                              static_sram_end=hex(max(b for a, b in ram_ranges)),
                              segments=segments)

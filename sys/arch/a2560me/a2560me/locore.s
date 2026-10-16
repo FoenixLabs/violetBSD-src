@@ -1,4 +1,4 @@
-/* Reset image for the 68LC060. Firmware copies 64 KiB to SRAM zero. */
+/* Kernel slot vectors for the 68LC060; flash entry installs them at SRAM zero. */
 #include "assym.h"
 #include <machine/asm.h>
 #include <machine/trap.h>
@@ -26,6 +26,17 @@ ASENTRY_NOPROFILE(start)
  movl #0x00100000,%d0
 #endif
  movc %d0,%vbr
+#ifndef A2560ME_RAM
+ /* Board reset copies the bootloader, not this relocated kernel, to SRAM.
+  * Replace the early vector table before enabling the MMU. Keep VBR at zero
+  * until vec_init installs the normal kernel table. */
+ lea __kernel_vectors,%a0
+ subal %a1,%a1
+ movw #255,%d1
+Lcopy_kernel_vectors:
+ movl %a0@+,%a1@+
+ dbra %d1,Lcopy_kernel_vectors
+#endif
  lea 0x10000,%sp
  /* Mask all GAVIN sources before touching peripherals. */
  movw #0xffff,0xfec00118

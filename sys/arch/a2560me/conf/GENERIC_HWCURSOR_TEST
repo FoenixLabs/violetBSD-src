@@ -1,0 +1,3 @@
+# Opt-in, root-triggered 15-second hardware pointer drawing test.
+include "arch/a2560me/conf/GENERIC"
+options A2560ME_HWCURSOR_TEST

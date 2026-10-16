@@ -75,7 +75,7 @@ A2560ME_LINKSCRIPT= ${A2560ME}/conf/kernel-ram.ld
 .endif
 LINKSCRIPT=	-T ${A2560ME_LINKSCRIPT}
 LINKTEXT=
-TEXTADDR?=	ffc10000
+TEXTADDR?=	ffe10000
 
 ##
 ## (6) port specific target dependencies
