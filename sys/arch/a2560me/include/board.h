@@ -21,6 +21,8 @@
 #define A2560ME_FLASH_SIZE 0x00400000
 #define A2560ME_RTC_BASE 0xfec00080
 #define A2560ME_SYSTEM_CTRL 0xfec00000
+/* GAVIN keyed whole-board cold reset, reference rev1.6 pp15,20-21. */
+#define A2560ME_SOFT_RESET 0xdead8000U
 #define A2560ME_CLOCK_HZ 50000000
 #define A2560ME_UART1 0xfec023f8
 #define A2560ME_UART2 0xfec022f8
@@ -41,6 +43,7 @@
 #define REG32(a) (*(volatile uint32_t *)(a))
 extern unsigned a2560me_clock_hz;
 extern int a2560me_boot_growroot;
+extern unsigned a2560me_boot_option;
 /* Reserved reset-copy page; mapped uncached once the MMU is enabled. */
 int a2560me_intr_establish(unsigned, int (*)(void *), void *);
 void a2560me_led_init(void);

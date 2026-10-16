@@ -7,6 +7,7 @@
 #include <sys/sysctl.h>
 #include <uvm/uvm_extern.h>
 #include <machine/board.h>
+#include <machine/bootparams.h>
 #include <machine/pmap.h>
 #include <m68k/seglist.h>
 #include <dev/cons.h>
@@ -18,8 +19,13 @@ struct pmap_bootmap machine_bootmap[] = {
 					 {.pmbm_vaddr = (vaddr_t)-1}};
 void a2560me_early_init(void);
 void machine_init(paddr_t);
+unsigned a2560me_boot_option;
+
 void a2560me_early_init(void)
 {
+	/* MMU/caches are still off; no bootstrap allocator has used this SRAM. */
+	a2560me_boot_option = a2560me_boot_consume(
+	    (volatile uint32_t *)A2560ME_BOOT_HANDOVER);
 	fputype = FPU_NONE;
 	physmem = A2560ME_SRAM_SIZE / PAGE_SIZE;
 #if defined(A2560ME_DDR_FULL) || defined(A2560ME_DDR64)
@@ -81,11 +87,11 @@ void machine_init(paddr_t nextpa)
 #endif
 	printf("MMU enabled; writable kernel/VM bootstrap ends at %#lx\n",
 	       (unsigned long)nextpa);
-	/* cpu_rootconf() selects the DIP root and adds the DIP single-user flag. */
+	/* cpu_rootconf() applies the saved bootloader option to these defaults. */
 #ifdef A2560ME_SINGLE_USER
 	boothowto = RB_SINGLE;
 #else
-	boothowto = 0; /* Multi-user unless user DIP bit 2 requests single-user. */
+	boothowto = 0; /* Normal default; bootloader may request single-user. */
 #endif
 }
 void consinit(void)
@@ -108,10 +114,22 @@ void machine_halt(void)
 }
 void machine_reboot(int howto, char *bootstr)
 {
-	/* Do not jump into reset with live MMU state. Hardware reset is
-	 * required. */
+	/* cpu_reboot_common already handles RB_NOSYNC, hooks, dumps and halt.
+	 * The manufacturer loader owns the next boot selection/parameters. */
+	(void)howto;
+	(void)bootstr;
+	splhigh();
+	/* This is a mapped, uncached, 32-bit register write. Leave the MMU on
+	 * until GAVIN resets the entire board, including the CPU/MMU/caches.
+	 * Do not jump to reset vectors or disable translation beneath C code. */
+	REG32(A2560ME_SYSTEM_CTRL) = A2560ME_SOFT_RESET;
+	/* The documented cold-reset sequence takes about 1.2 seconds. The
+	 * CPU normally resets before this returns; stop safely if it fails. */
+	delay(2000000);
+	printf("GAVIN reset failed; halting.\n");
 	machine_halt();
 }
+
 int nmihand(void *arg)
 {
 	return 1;
@@ -124,7 +142,7 @@ SYSCTL_SETUP(sysctl_machdep_setup, "a2560me machdep")
 		       "console_device", NULL, sysctl_consdev, 0, NULL,
 		       sizeof(dev_t), CTL_MACHDEP, CPU_CONSDEV, CTL_EOL);
 	sysctl_createv(clog, 0, NULL, NULL, CTLFLAG_PERMANENT, CTLTYPE_INT,
-	    "boot_growroot", SYSCTL_DESCR("User DIP 2 root expansion request"),
+	    "boot_growroot", SYSCTL_DESCR("Bootloader root expansion request"),
 	    NULL, 0, &a2560me_boot_growroot, 0, CTL_MACHDEP, CTL_CREATE,
 	    CTL_EOL);
 }

@@ -6,6 +6,7 @@
 #include <sys/reboot.h>
 #include <machine/intr.h>
 #include <machine/board.h>
+#include <machine/bootparams.h>
 #include "opt_a2560me.h"
 #ifdef A2560ME_GUI_DEMO
 void a2560me_gui_demo(void);
@@ -27,20 +28,14 @@ void cpu_rootconf(void)
 	a2560me_gui_demo();
 	machine_halt();
 #endif
-	uint32_t control;
-	unsigned int usr_dips;
-
-	/* Native big-endian longword; user DIP inputs are active low. */
-	control = REG32(A2560ME_SYSTEM_CTRL);
-	usr_dips = (~(control >> 24)) & 0x03;
 	rootspec = "ld3a";
-	/* DIP 1 adds single-user mode; retain all existing boot flags. */
-	if (usr_dips & 0x01)
-		boothowto |= RB_SINGLE;
-	a2560me_boot_growroot = (usr_dips & 0x02) != 0;
 	rootfstype = "ffs";
-	printf("User DIP %u: root %s, filesystem %s, %s-user, expansion %s\n",
-	    usr_dips, rootspec, rootfstype,
+	/* Retain flags explicitly selected by a maintenance kernel configuration. */
+	if (a2560me_boot_option == A2560ME_BOOT_SINGLE)
+		boothowto |= RB_SINGLE;
+	a2560me_boot_growroot = a2560me_boot_option == A2560ME_BOOT_EXPAND;
+	printf("Bootloader option %u: root %s, filesystem %s, %s-user, expansion %s\n",
+	    a2560me_boot_option, rootspec, rootfstype,
 	    (boothowto & RB_SINGLE) ? "single" : "multi",
 	    a2560me_boot_growroot ? "requested" : "off");
 	rootconf();
